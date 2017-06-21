@@ -1,0 +1,72 @@
+@import 'compass/reset';
+
+.innerBody{
+  display: block;
+  width: 1050px;
+  margin: 0 auto;
+  height: 800px;
+  background: green;
+  background: linear-gradient(to bottom right, green, lightgreen);
+}
+.startScene, .gameScene, .goalScene {
+  display: inline-block;
+  height: 800px;
+  position: relative;
+  float: left;
+}
+
+.startScene {
+  width: 100px;
+
+}
+
+.gameScene {
+  width: 820px;
+}
+
+.goalScene {
+  width: 100px;
+}
+
+.cardWrap {
+  position: relative;
+  width: 92px;
+  height: 134px;
+  border-radius: 5px;
+  border: 1px solid black;
+
+  &.start {
+    display: block;
+    margin: 0 auto 15px;
+
+  }
+
+  &.draw{
+    display: block;
+    margin: 0 auto;
+  }
+
+  &.game{
+    display: inline-block;
+    margin: 0 10px;
+  }
+
+  &.goal{
+    display: block;
+    margin: 0 auto 5px;
+  }
+}
+
+.card{
+  position: absolute;
+  top:0;
+  left:0;
+  width: 92px;
+  height: 134px;
+  background-position: center;
+  &.moving{
+    display: none;
+    border: 2px solid lightblue;
+    pointer-events: none;
+  }
+}

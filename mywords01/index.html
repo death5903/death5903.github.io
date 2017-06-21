@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>My fist front-end website</title>
+    <link href="assets/css/index.css" type="text/css" rel="stylesheet"/>
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet"
+          integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+    <script src="assets/js/TweenMax.min.js" type="text/javascript"></script>
+    <script src="assets/js/index.js" type="text/javascript"></script>
+
+</head>
+<body>
+
+<div class="page">
+    <div class="welcome">
+        <span>Welcome!</span>
+        <span>Click "ENTER" or robot to go to home page.</span>
+        <span>Or...you can key something here.</span>
+        <div class="arrow"></div>
+    </div>
+    <div class="robot">
+        <img src="assets/img/robot.png"/>
+    </div>
+</div>
+
+<div class="page off">
+    <div class="home">
+        <div class="header">
+            <span>H</span><span>o</span><span>m</span><span>e</span><span>.</span><span>_</span>
+        </div>
+        <div class="content">
+            <div class="leftArrow fa fa-arrow-circle-left fa-lg" data-arrowTip="(Contact)" onclick="showPage(3)"></div>
+            <div class="mainContent fa fa-file-word-o fa-lg" onclick="showPanel(0)"></div>
+            <div class="rightArrow fa fa-arrow-circle-right fa-lg" data-arrowTip="(About)" onclick="showPage(2)"></div>
+        </div>
+        <div class="footer">
+
+        </div>
+    </div>
+</div>
+
+<div class="page off">
+    <div class="about">
+        <div class="header">
+            <span>A</span><span>b</span><span>o</span><span>u</span><span>t</span><span>.</span><span>_</span>
+        </div>
+        <div class="content">
+            <div class="leftArrow fa fa-arrow-circle-left fa-lg" data-arrowTip="(Home)" onclick="showPage(1)"></div>
+            <div class="mainContent fa fa-user-o fa-lg" onclick="showPanel(1)"></div>
+            <div class="rightArrow fa fa-arrow-circle-right fa-lg" data-arrowTip="(Contact)"
+                 onclick="showPage(3)"></div>
+        </div>
+        <div class="footer">
+
+        </div>
+    </div>
+</div>
+
+<div class="page off">
+    <div class="contact">
+        <div class="header">
+            <span>C</span><span>o</span><span>n</span><span>t</span><span>a</span><span>c</span><span>t</span><span>.</span><span>_</span>
+        </div>
+        <div class="content">
+            <div class="leftArrow fa fa-arrow-circle-left fa-lg" data-arrowTip="(About)" onclick="showPage(2)"></div>
+            <div class="mainContent fa fa-envelope-o fa-lg" onclick="showPanel(2)"></div>
+            <div class="rightArrow fa fa-arrow-circle-right fa-lg" data-arrowTip="(Home)" onclick="showPage(1)"></div>
+        </div>
+        <div class="footer">
+
+        </div>
+    </div>
+</div>
+
+<div class="panel p1 off">
+    <div>
+        <div>
+            <img src="assets/img/gertbot.png" style="width: 20vw;height: 15vw"/>
+        </div>
+        <div>
+            <p>這傢伙叫格特，據說是根據毛衣上的圖案製作出來的，機器人軍隊的第一款機器人。</p>
+        </div>
+    </div>
+    <div>
+        <div>
+            <p>新加入的跳舞機器人，興趣是跳舞，熱愛跳舞。</p>
+        </div>
+        <div>
+            <img src="assets/img/dancerbot.png" style="width: 20vw;height: 15vw"/>
+        </div>
+    </div>
+    <div>
+        <div>
+            <img src="assets/img/drip.png" style="width: 20vw;height: 15vw"/>
+        </div>
+        <div>
+            <p>它是點滴，喜歡在肚子裡煮咖啡，然後再一口喝下，好喝！</p>
+        </div>
+    </div>
+    <div>
+        <div>
+            <p>本名凱爾‧耐斯，由真人改造出來的機器人。</p>
+        </div>
+        <div>
+            <img src="assets/img/knylebot.png" style="width: 15vw;height: 20vw"/>
+        </div>
+    </div>
+    <div>
+        <div>
+            <img src="assets/img/drunk-knylebot.png" style="width: 15vw;height: 20vw"/>
+        </div>
+        <div>
+            <p>喝醉酒的凱爾，臭氣沖天，千萬別靠近。</p>
+        </div>
+    </div>
+    <div>
+        <div>
+            <p>最新型的遊玩機器人，多媒體、電玩都難不倒它。</p>
+        </div>
+        <div>
+            <img src="assets/img/playbot.png" style="width: 14vw;height: 22vw"/>
+        </div>
+    </div>
+</div>
+<div class="panel p2 off">
+    <div>
+        <h1>關於本站</h1>
+        <hr>
+        <p>一個簡單的SPA靜態網站，開頭對話框可以打字哦！動畫是使用TweenMax慢慢寫出來的，機器人圖片是來自 Diana Mounter 的作品集。</p>
+    </div>
+    <div>
+        <h1>關於作者</h1>
+        <hr>
+        <p>不久的將來會成為優秀的網頁全端工程師，目前還在努力學習中...</p>
+    </div>
+</div>
+
+<div class="panel p3 off">
+    <form>
+        <div>
+            <label for="inputTitle">Title</label>
+            <input type="text" id="inputTitle">
+        </div>
+        <div>
+            <label for="inputName">From</label>
+            <input type="text" id="inputName">
+        </div>
+        <div>
+            <label for="inputBody">Message</label>
+            <textarea rows="5" cols="40" id="inputBody"></textarea>
+        </div>
+    </form>
+        <button>submit</button>
+</div>
+
+<div class="backScreen off" onclick="showPanelOff()"></div>
+</body>
+</html>

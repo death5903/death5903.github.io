@@ -1,0 +1,296 @@
+#screen{
+	position:absolute;
+	width:100%;
+	height:100%;
+	background-color: white;
+	z-index: 30;
+	top:0px;
+	left:0px;
+}
+
+#loader{
+	position:absolute;
+	top:50%;
+	left:50%;
+	transform:translate(-50%,-50%);
+	z-index: 35;
+}
+
+.dot{
+	width:20px;
+	height:20px;
+	display: inline-block;
+	margin-right: 6px;
+	text-align: center;
+	line-height:20px;
+	z-index: 40;
+}
+.dot.borderup{
+	background-image: url('../img/borderup.jpg');
+
+}
+.dot.borderdown{
+	background-image: url('../img/borderdown.jpg');
+}
+
+#bgpic {
+	position: relative;
+	background-image: url("../img/bg.jpg");
+	background-position:-100px -100px;
+	width: 950px;
+	height: 930px;
+	display: inline-block;
+}
+
+#showGameBoard {
+	left: 125px;
+	top: 118px;
+	width: 610px;
+	height: 610px;
+	position: relative;
+	opacity: 1;
+	display: inline-block;
+}
+
+#gameOverPic{
+	display:none;
+	left:225px;
+	top:300px;
+	position:absolute;
+	width: 400px;
+	height: 200px;
+	z-index:20;
+	background-image: url("../img/gameover.jpg");
+	animation-duration: 1000ms;
+}
+
+.block {
+	width: 140px;
+	height: 140px;
+	display: inline-block;
+	text-align: center;
+	line-height: 140px;
+	font-size: 4em;
+	position: absolute;
+	z-index: 5;
+}
+
+.block2 {
+	width: 140px;
+	height: 140px;
+	background-image: url("../img/block2.jpg");
+	display: inline-block;
+	text-align: center;
+	line-height: 140px;
+	font-size: 4em;
+	position: absolute;
+	z-index: 10;
+	animation-duration: 250ms;
+	opacity: 0.75;
+}
+
+.block3 {
+	width: 140px;
+	height: 140px;
+	background-image: url("../img/block2.jpg");
+	display: inline-block;
+	text-align: center;
+	line-height: 140px;
+	font-size: 2em;
+	position: absolute;
+	z-index: 10;
+	animation-duration: 250ms;
+	opacity: 0.75;
+}
+
+.redText {
+	color:red;
+	text-decoration: underline;
+}
+
+#informationBoard {
+	display: inline-block;
+	vertical-align: top;
+}
+
+#buttons {
+	display: inline-block;
+	width: 750px;
+	height: 450px;
+	position: relative;
+}
+
+#scoreAndRound {
+	display: inline-block;
+	width: 750px;
+	height: 420px;
+	vertical-align: top;
+	margin-left: 0px;
+	position: relative;
+}
+
+#score {
+	margin-top:50px;
+	width: 375px;
+	height: 140px;
+	display: inline-block;
+	vertical-align: top;
+	background-image: url("../img/score.jpg");
+}
+
+#scoreValue {
+	margin-top:50px;
+	width: 300px;
+	height: 140px;
+	display: inline-block;
+	text-align: center;
+	line-height: 140px;
+	font-size: 5em;
+	font-style: italic;
+	animation-duration:500ms;
+}
+
+#round {
+	width: 375px;
+	height: 140px;
+	display: inline-block;
+	vertical-align: top;
+	background-image: url("../img/round.jpg");
+}
+
+#roundValue {
+	width: 300px;
+	height: 140px;
+	display: inline-block;
+	text-align: center;
+	line-height: 140px;
+	font-size: 5em;
+	font-style: italic;
+	animation-duration:500ms;
+}
+
+#btnStart {
+	z-index: 10;
+	left: 130px;
+	top: 40px;
+	width: 375px;
+	height: 140px;
+	background-image: url("../img/start3.jpg");
+	display: inline-block;
+	position: absolute;
+	animation-duration:500ms;
+}
+
+#btnStart:HOVER {
+	background-image: url("../img/start3-2.jpg");
+	cursor: pointer;
+}
+
+#btnLeft {
+	left: 0px;
+	top: 135px;
+	position: absolute;
+	display: inline-block;
+	width: 200px;
+	height: 150px;
+	background-image: url("../img/left2.jpg");
+	animation-duration:250ms;
+}
+
+#btnLeft:HOVER {
+	background-image: url("../img/left2-2.jpg");
+	cursor: pointer;
+}
+
+#btnRight {
+	left: 390px;
+	top: 135px;
+	position: absolute;
+	display: inline-block;
+	width: 200px;
+	height: 150px;
+	background-image: url("../img/right2.jpg");
+	animation-duration:250ms;
+}
+
+#btnRight:HOVER {
+	background-image: url("../img/right2-2.jpg");
+	cursor: pointer;
+}
+
+#btnTop {
+	left: 220px;
+	top: 0px;
+	position: absolute;
+	display: inline-block;
+	width: 150px;
+	height: 200px;
+	background-image: url("../img/top2.jpg");
+	animation-duration:250ms;
+}
+
+#btnTop:HOVER {
+	background-image: url("../img/top2-2.jpg");
+	cursor: pointer;
+}
+
+#btnDown {
+	left: 220px;
+	top: 220px;
+	position: absolute;
+	display: inline-block;
+	width: 150px;
+	height: 200px;
+	background-image: url("../img/down2.jpg");
+	animation-duration:250ms;
+}
+
+#btnDown:HOVER {
+	background-image: url("../img/down2-2.jpg");
+	cursor: pointer;
+}
+
+.scoreValueUp{
+	position: absolute;
+	z-index:10;
+	width:100px;
+	height:100px;
+	line-height:100px;
+	left:500px;
+	top:50px;
+	font-size: 4em;
+	color: orange;
+	opacity:0;
+	animation-duration:750ms;
+	animation-name:scoreUp;
+}
+
+@keyframes biggerAni { 
+50% {transform: scale(1.2);}
+}
+
+@keyframes bornAni { 
+0% {transform: scale(0.1);}
+80%{transform:scale(1.2);}
+100%{transform:scale(1);}
+}
+
+@keyframes gameOverAni{
+0%{opacity:0.1;top:400px;}
+100%{opacity:1;top:300px;}
+}
+
+@keyframes numberChangeAni{
+50%{font-size:6em;}
+}
+
+@keyframes startAni{
+0%{opacity:0.1;top:140px;}
+100%{opacity:1;top:40px;}
+}
+
+@keyframes scoreUp{
+0%{opacity:1;top:50px;}
+75%{opacity:1;top:-25px;}
+100%{opacity:0;top:-25px;}
+}

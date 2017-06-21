@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>2048 Demo</title>
+<link rel="stylesheet" href="css/reset200802.css" type="text/css"></link>
+<link rel="stylesheet" href="css/game.css" type="text/css"></link>
+<script type="text/javascript" src="js/TweenMax.min.js"></script>
+<script type="text/javascript" src="js/game.js"></script>
+</head>
+<body>
+	<div id="screen"></div>
+	<div id="loader">
+		<div class="dot borderup"><img src="img/2.jpg"/></div>
+		<div class="dot borderdown"><img src="img/0.jpg"/></div>
+		<div class="dot borderup"><img src="img/4.jpg"/></div>
+		<div class="dot borderdown"><img src="img/8.jpg"/></div>
+	</div>
+	<div id="bgpic">
+		<div id="showGameBoard"></div>
+		<div id="gameOverPic"></div>
+	</div>
+	<div id="informationBoard">
+		<div id="scoreAndRound">
+			<div id="score"></div>
+			<div id="forResetScoreValueAni" style="display: inline-block;"><div id="scoreValue"></div></div>
+			<div id="round"></div>
+			<div id="forResetRoundValueAni" style="display: inline-block;"><div id="roundValue"></div></div>
+		</div>
+		<br />
+		<div id="buttons">
+			<div id="btnStart" style="display: none;"></div>
+			<div id="btnLeft" style="display: none;"></div>
+			<div id="btnRight" style="display: none;"></div>
+			<div id="btnTop" style="display: none;"></div>
+			<div id="btnDown" style="display: none;"></div>
+			<button id="btnLog" style="display: none;">SHOWLOG</button>
+		</div>
+	</div>
+</body>
+</html>
