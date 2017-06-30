@@ -3,17 +3,17 @@
  */
 
 // dom
-    var btn = document.querySelector(".btn");
-    var blackBack = document.querySelector(".blackBack");
-    var hint = document.querySelector(".hint");
-    btn.addEventListener("click",function () {
-        hint.classList.remove("off");
-        blackBack.classList.remove("off");
-    });
-    blackBack.addEventListener("click",function () {
-        hint.classList.add("off");
-        this.classList.add("off");
-    });
+var btn = document.querySelector(".btn");
+var blackBack = document.querySelector(".blackBack");
+var hint = document.querySelector(".hint");
+btn.addEventListener("click", function () {
+    hint.classList.remove("off");
+    blackBack.classList.remove("off");
+});
+blackBack.addEventListener("click", function () {
+    hint.classList.add("off");
+    this.classList.add("off");
+});
 ////
 
 var canvas = document.querySelector("canvas");
@@ -51,8 +51,8 @@ var turrentPic = document.createElement("img");
 turrentPic.src = "resource/img/turrent.png";
 var hasEmission = 0;
 
-var mobileInterval;
-var mouseInterval;
+var mobileInterval = null;
+var mouseInterval = null;
 
 // for (var i = 0; i < 5; i++) {
 //     var fType = getRandomFishData();
@@ -73,22 +73,25 @@ window.addEventListener("keydown", function (e) {
         e.preventDefault();
         emissionBullet();
     }
-    if(e.keyCode === 81){
+    if (e.keyCode === 81) {
         e.preventDefault();
         score += 100;
     }
 });
 canvas.addEventListener("mousedown", function (e) {
-    if (e.button === 0 ) {
+    if (e.button === 0) {
         e.preventDefault();
         mouseX = e.clientX;
         mouseY = e.clientY;
         emissionBullet();
-        mouseInterval = setInterval(emissionBullet, 200);
+        if (mouseInterval === null) {
+            mouseInterval = setInterval(emissionBullet, 200);
+        }
     }
 });
 window.addEventListener("mouseup", function (e) {
     clearInterval(mouseInterval);
+    mouseInterval = null;
 });
 window.addEventListener("resize", function () {
     init();
@@ -102,11 +105,15 @@ window.addEventListener("touchstart", function (e) {
         mouseX = e.touches[0].clientX;
         mouseY = e.touches[0].clientY;
         emissionBullet();
-        mobileInterval = setInterval(emissionBullet, 200);
+        // if (mouseInterval === null) {
+        //     mobileInterval = setInterval(emissionBullet, 200);
+        // }
     }
 });
 window.addEventListener("touchend", function () {
-    clearInterval(mobileInterval);
+    // clearInterval(mobileInterval);
+    // console.log("123");
+    // mobileInterval = null;
 });
 window.addEventListener("touchmove", function (e) {
     if (e.touches.length === 1) {
@@ -671,7 +678,7 @@ function init() {
     canvas.height = window.innerHeight;
 }
 
-function generateRandomFish(){
+function generateRandomFish() {
     var token = Math.random();
     if (token < 0.01) {
         var fType = getRandomFishData();
@@ -684,7 +691,7 @@ function generateRandomFish(){
         aFishs.push(f);
     }
 }
-function generateRandomItem(){
+function generateRandomItem() {
     if (itemAppearTime > 0) {
         var token = Math.random();
         if (token < 0.002) {
@@ -698,7 +705,7 @@ function generateRandomItem(){
     }
 }
 
-function drawAllObject(){
+function drawAllObject() {
     for (var i = 0; i < aBullets.length; i++) {
         if (aBullets[i] !== null)
             aBullets[i].update();
