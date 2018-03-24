@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Green Snake</title>
+    <script src="rough.js"></script>
+</head>
+<body>
+
+<div style="position:relative;display: block;width:600px;margin: 0 auto">
+    <!--<div style="top:0;position:relative;display: inline-block;width: 320px;height:300px;vertical-align: middle">-->
+        <!--<canvas width="300px" height="200px"></canvas>-->
+        <!--<canvas class="score" width="100px" height="100px"></canvas>-->
+        <!--<canvas class="score" width="100px" height="100px"></canvas>-->
+        <!--<canvas class="score" width="100px" height="100px"></canvas>-->
+    <!--</div>-->
+    <div style="position:relative;display: inline-block;width: 600px;vertical-align: middle">
+        <canvas id="gameCanvas" style="border: 2px solid gray" width="600px" height="600px"></canvas>
+    </div>
+</div>
+
+
+<script>
+    //貪食蛇 GAME
+
+    //遊戲參數
+    const canvasWidth = 600;
+    const canvasHeight = 600;
+
+    let snakeData = [];
+    let snakeSize = 30;
+    let controlData = [];
+    let moveSpeed = 1;
+    let foodData = [];
+    let isGaming = false;
+    let isGameOver = false;
+
+    let initSnakeLength = 5;
+    let score = 0;
+
+    //開發物件
+    let rc = null;
+    let context2d = null;
+    let canvas = null;
+    let updateCallback = null;
+
+    let scoreTitleRc = null;
+    let scoreTitleC2d = null;
+    let scoreTitleCanvas = null;
+
+    let scoreRcs = [];
+    let scoreC2ds = [];
+    let scoreCanvas = null;
+
+    //蛇
+    let SnakeItem = function (x, y, d) {
+        this.x = x;
+        this.y = y;
+        this.d = d;
+    };
+
+    //控制物件
+    let ControlItem = function (x, y, d, hp) {
+        this.x = x;
+        this.y = y;
+        this.d = d;
+        this.hp = hp;
+    };
+
+    //食物
+    let Food = function (x, y) {
+        this.x = x;
+        this.y = y;
+    };
+
+    //刷新回調
+    function update() {
+        //分數計算系統 渲染太多畫板 效能太差了
+        // clearScoreTitleCanvas();
+        // drawScoreSVG();
+        //
+        // clearScoreCanvas();
+        // drawPlayerScore();
+
+        clear();
+
+        if (!isGaming) {
+            drawGreedSnakeSVG();
+        } else {
+            checkGameOver();
+            drawSnake();
+            drawFood();
+            if (!isGameOver) {
+                updateSnakeAndControlStatus();
+                checkGetFood();
+                updateControlItemDestroyStatus();
+            } else {
+                drawGameOverSVG();
+            }
+        }
+    }
+
+    function onLoad() {
+        init();
+        start();
+    }
+
+    ///game start
+    function start() {
+        updateCallback = window.setInterval(update, 5);
+    }
+
+    function resetGameData() {
+        snakeData.length = 0;
+        controlData.length = 0;
+        foodData.length = 0;
+
+        for (let i = 0; i < initSnakeLength; i++) {
+            addSnakeItem();
+        }
+        addFood();
+
+        isGaming = true;
+        isGameOver = false;
+    }
+
+    //初始化
+    function init() {
+        canvas = document.getElementById("gameCanvas");
+        context2d = canvas.getContext("2d");
+        rc = rough.canvas(canvas);
+
+        window.addEventListener("keydown", onKeyDownEvent);
+
+        scoreTitleCanvas = document.getElementsByTagName("canvas")[0];
+        scoreTitleC2d = scoreTitleCanvas.getContext("2d");
+        scoreTitleRc = rough.canvas(scoreTitleCanvas);
+
+        scoreCanvas = document.getElementsByClassName("score");
+        for (let i = 0; i < scoreCanvas.length; i++) {
+            scoreC2ds.push(scoreCanvas[i].getContext("2d"));
+            scoreRcs.push(rough.canvas(scoreCanvas[i]));
+        }
+    }
+
+    //render snake
+    function drawSnake() {
+        for (let i = 0; i < snakeData.length; i++) {
+            let item = snakeData[i];
+            if (i === 0) {
+                rc.rectangle(item.x, item.y, snakeSize, snakeSize, {fill: "black"});
+            } else {
+                rc.rectangle(item.x, item.y, snakeSize, snakeSize, {fill: "blue"});
+            }
+        }
+    }
+
+    function drawFood() {
+        for (let i = 0; i < foodData.length; i++) {
+            let item = foodData[i];
+            rc.circle(item.x + snakeSize / 2, item.y + snakeSize / 2, snakeSize, {fill: "deeppink", fillWeight: 3});
+        }
+    }
+
+    function addSnakeItem() {
+        if (snakeData.length === 0) {
+            snakeData.push(new SnakeItem((initSnakeLength - 1) * snakeSize, 0, "r"));
+        } else {
+            let lastItem = snakeData[snakeData.length - 1];
+            let x = null;
+            let y = null;
+            switch (lastItem.d) {
+                case "r":
+                    x = lastItem.x - snakeSize;
+                    y = lastItem.y;
+                    break;
+                case "l":
+                    x = lastItem.x + snakeSize;
+                    y = lastItem.y;
+                    break;
+                case "u":
+                    x = lastItem.x;
+                    y = lastItem.y + snakeSize;
+                    break;
+                case "d":
+                    x = lastItem.x;
+                    y = lastItem.y - snakeSize;
+                    break;
+            }
+            let xyObj = fixCoordinate(x, y, lastItem.d);
+            x = xyObj["x"];
+            y = xyObj["y"];
+            snakeData.push(new SnakeItem(x, y, lastItem.d));
+        }
+    }
+
+    function addFood() {
+        let repeatFlag = true;
+        let x = null;
+        let y = null;
+        while (repeatFlag) {
+            repeatFlag = false;
+            x = Math.floor(Math.random() * (canvasWidth / snakeSize)) * snakeSize;
+            y = Math.floor(Math.random() * (canvasHeight / snakeSize)) * snakeSize;
+            for (let i = 0; i < snakeData.length; i++) {
+                if (snakeData[i].x === x && snakeData[i].y === y) {
+                    repeatFlag = true;
+                    break;
+                }
+            }
+        }
+        foodData.push(new Food(x, y));
+    }
+
+    //update snake status
+    function updateSnakeAndControlStatus() {
+        for (let i = 0; i < snakeData.length; i++) {
+            let item = snakeData[i];
+            switch (item.d) {
+                case "r":
+                    item.x += moveSpeed;
+                    break;
+                case "l":
+                    item.x -= moveSpeed;
+                    break;
+                case "u":
+                    item.y -= moveSpeed;
+                    break;
+                case "d":
+                    item.y += moveSpeed;
+                    break;
+            }
+
+            let xyObj = fixCoordinate(item.x, item.y, item.d);
+            item.x = xyObj["x"];
+            item.y = xyObj["y"];
+
+            for (let j = 0; j < controlData.length; j++) {
+                if (item.x === controlData[j].x && item.y === controlData[j].y) {
+                    item.d = controlData[j].d;
+                    controlData[j].hp--;
+                    break;
+                }
+            }
+        }
+    }
+
+    function updateControlItemDestroyStatus() {
+        for (let i = 0; i < controlData.length; i++) {
+            if (controlData[i].hp === 0) {
+                controlData.splice(i, 1);
+                i--;
+            }
+        }
+    }
+
+    //修正邊際座標
+    function fixCoordinate(x, y, d) {
+        switch (d) {
+            case "r":
+                if (x > canvasWidth - snakeSize) {
+                    x = x - canvasWidth;
+                }
+                break;
+            case "l":
+                if (x < 0) {
+                    x = canvasWidth + x;
+                }
+                break;
+            case "u":
+                if (y < 0) {
+                    y = canvasHeight + y;
+                }
+                break;
+            case "d":
+                if (y > canvasHeight - snakeSize) {
+                    y = y - canvasHeight;
+                }
+                break;
+        }
+        return {x: x, y: y};
+    }
+
+    function addControlItem(d) {
+        let xyObj = getCheckPosition();
+
+        let addFlag = true;
+        for (let i = 0; i < controlData.length; i++) {
+            if (xyObj["x"] === controlData[i].x && xyObj["y"] === controlData[i].y) {
+                addFlag = false;
+                controlData[i].d = d;
+                break;
+            }
+        }
+
+        if (addFlag) {
+            let item = new ControlItem(xyObj["x"], xyObj["y"], d, snakeData.length);
+            controlData.push(item);
+        }
+    }
+
+    function onKeyDownEvent(e) {
+        if (!isGaming) {
+            if (e.keyCode === 32) {
+                resetGameData();
+            }
+            return;
+        }
+        if (isGameOver) {
+            if (e.keyCode === 32) {
+                isGaming = false;
+            }
+            return;
+        }
+        let direction = snakeData[0].d;
+        switch (e.keyCode) {
+            //w
+            case 87:
+            case 38:
+                if (direction === "r" || direction === "l") {
+                    addControlItem("u");
+                }
+                break;
+            //s
+            case 83:
+            case 40:
+                if (direction === "r" || direction === "l") {
+                    addControlItem("d");
+                }
+                break;
+            //a
+            case 65:
+            case 37:
+                if (direction === "u" || direction === "d") {
+                    addControlItem("l");
+                }
+                break;
+            //d
+            case 68:
+            case 39:
+                if (direction === "u" || direction === "d") {
+                    addControlItem("r");
+                }
+                break;
+        }
+    }
+
+    //取得下一個轉彎點座標
+    function getCheckPosition() {
+        let item = snakeData[0];
+        let cx = item.x, cy = item.y;
+        switch (item.d) {
+            case "r":
+                cx = (Math.floor(item.x / snakeSize) + 1) * snakeSize;
+                if (cx > canvasWidth - snakeSize) {
+                    cx = 0;
+                }
+                break;
+            case "l":
+                cx = (Math.ceil(item.x / snakeSize) - 1) * snakeSize;
+                if (cx < 0) {
+                    cx = canvasWidth - snakeSize;
+                }
+                break;
+            case "u":
+                cy = (Math.ceil(item.y / snakeSize) - 1) * snakeSize;
+                if (cy < 0) {
+                    cy = canvasHeight - snakeSize;
+                }
+                break;
+            case "d":
+                cy = (Math.floor(item.y / snakeSize) + 1) * snakeSize;
+                if (cy > canvasHeight - snakeSize) {
+                    cy = 0;
+                }
+                break;
+        }
+        return {x: cx, y: cy};
+    }
+
+    function checkGetFood() {
+        let item = snakeData[0];
+        for (let i = 0; i < foodData.length; i++) {
+            if (item.x === foodData[i].x && item.y === foodData[i].y) {
+                foodData.splice(i, 1);
+                score++;
+                addSnakeItem();
+                controlDataHpAddOne();
+                addFood();
+                break;
+            }
+        }
+    }
+
+    function controlDataHpAddOne() {
+        for (let i = 0; i < controlData.length; i++) {
+            controlData[i].hp++;
+        }
+    }
+
+    //clear canvas
+    function clear() {
+        context2d.clearRect(0, 0, canvasWidth, canvasHeight);
+    }
+
+    //check game over
+    function checkGameOver() {
+        for (let i = 1; i < snakeData.length; i++) {
+            if (snakeData[0].x === snakeData[i].x && snakeData[0].y === snakeData[i].y) {
+                isGameOver = true;
+                break;
+            }
+        }
+    }
+
+    function drawGreedSnakeSVG() {
+        rc.path('M24,445.3c2.2,0.1,12.2,0.3,13,0.2l0.1,6.4c-0.7-0.3-11.2,0.7-12.9,1L24,445.3z', {
+            fill: 'black',
+            fillWeight: 3
+        });
+        rc.path('M57.5,483.8c0.1-4.4,0.2-28.8,0.2-36v-11.1c0-2.3-0.1-22.3-0.1-23.8c1.8,0,5.5,0.3,8.1,1.3\n' +
+            '\t\tc5.8,2.2,9.4,8.7,9.4,19.4c0,13.9-5.5,25.1-13.7,29v6c0,2,0,13.1,0.1,15.2H57.5z M61.5,455.5c5.5-2.7,9.5-9.2,9.5-20.4\n' +
+            '\t\tc0-3-0.7-14.5-9.5-14.8V455.5z', {fill: 'black', fillWeight: 3});
+        rc.path('M87.7,452.8c0,3.8,0.1,29.5,0.2,31h-4.2c0.2-2.4,0.1-34.5,0.1-36.7v-8.3c0-3-0.1-24-0.2-25.9\n' +
+            '\t\tc2,0,5.7,0.1,9,1c5.7,1.6,9,7.3,9,15.9s-2.5,15.3-6,20.6c1.1,3.4,8.9,26,10.1,29.1l-3.3,6.2c-0.5-1.4-10.2-31.3-11.5-35.5\n' +
+            '\t\tc2.2-2.7,6.5-8.9,6.5-18.8c0-4.6-1.4-11.3-9.6-11.5V452.8z', {fill: 'black', fillWeight: 3});
+        rc.path('M128.3,484.8c-0.7,0-13.7-1-14.6-1c0.1-5.4,0.1-27,0.1-29.4v-13.6c0-1.6-0.1-25.9-0.1-27.8\n' +
+            '\t\tc1,0,12.3-1.3,13.7-1.7l0.2,8c-1.4,0-9.2,0.5-9.9,0.5v25.4c0.8,0,6.3-0.5,8.4-1.1l0.1,8c-1,0-7.7-0.4-8.6-0.4v24.7\n' +
+            '\t\tc1,0,6.8,0.3,10.4-0.3L128.3,484.8z', {fill: 'black', fillWeight: 3});
+        rc.path('M137.4,478c4.2-2,9.7-7.1,9.7-15.3c0-5.1-1.4-7.7-4.5-11.6c-3.7-4.7-6.2-8.9-6.2-16.1\n' +
+            '\t\tc0-10.7,6.4-20.6,12.3-23.7l0.9,7.8c-2.6,1-9.1,5.7-9.1,14.2c0,5.3,3.1,8.5,4.9,11c3.3,4.6,5.9,7.8,5.9,16\n' +
+            '\t\tc0,9.9-4.5,20.8-12.8,25.3L137.4,478z', {fill: 'black', fillWeight: 3});
+        rc.path('M160.2,478c4.2-2,9.7-7.1,9.7-15.3c0-5.1-1.4-7.7-4.5-11.6c-3.7-4.7-6.2-8.9-6.2-16.1\n' +
+            '\t\tc0-10.7,6.4-20.6,12.3-23.7l0.9,7.8c-2.6,1-9.1,5.7-9.1,14.2c0,5.3,3.1,8.5,4.9,11c3.3,4.6,5.9,7.8,5.9,16\n' +
+            '\t\tc0,9.9-4.5,20.8-12.8,25.3L160.2,478z', {fill: 'black', fillWeight: 3});
+        rc.path('M196,478c4.2-2,9.7-7.1,9.7-15.3c0-5.1-1.4-7.7-4.5-11.6c-3.7-4.7-6.2-8.9-6.2-16.1\n' +
+            '\t\tc0-10.7,6.4-20.6,12.3-23.7l0.9,7.8c-2.6,1-9.1,5.7-9.1,14.2c0,5.3,3.1,8.5,4.9,11c3.3,4.6,5.9,7.8,5.9,16\n' +
+            '\t\tc0,9.9-4.5,20.8-12.8,25.3L196,478z', {fill: 'red', fillWeight: 3});
+        rc.path('M220,483.8c0.1-4.4,0.2-28.8,0.2-36v-11.1c0-2.3-0.1-22.3-0.1-23.8c1.8,0,5.5,0.3,8.1,1.3\n' +
+            '\t\tc5.8,2.2,9.4,8.7,9.4,19.4c0,13.9-5.5,25.1-13.7,29v6c0,2,0,13.1,0.1,15.2H220z M224,455.5c5.5-2.7,9.5-9.2,9.5-20.4\n' +
+            '\t\tc0-3-0.7-14.5-9.5-14.8V455.5z', {fill: 'red', fillWeight: 3});
+        rc.path('M239,480.5c2.4-9.7,14.9-67.2,15.9-71.1h0.1c3.8,14.4,14.1,60.1,17,70.6l-3.7,5.7\n' +
+            '\t\tc-0.9-3.8-5.5-24.6-5.9-26.2l-15,1.4c-0.5,1.9-4.1,21.5-4.8,24.9L239,480.5z M261.1,452.9c-0.5-2.2-5.8-25.8-6.2-27.4\n' +
+            '\t\tc-0.6,2.2-5.6,27-6,28.7L261.1,452.9z', {fill: 'red', fillWeight: 3});
+        rc.path('M299.7,484.4c-1.3,0.6-3.3,1-5.9,1c-14.8,0-18.5-20.7-18.5-30c0-16.6,6.5-37.8,21.8-44.2\n' +
+            '\t\tl0.6,8.5c-9.9,2.6-18.1,16.5-18.1,33.9c0,12.4,4.2,24,14.5,24c1.7,0,3.6-0.6,5-1.4L299.7,484.4z', {
+            fill: 'red',
+            fillWeight: 3
+        });
+        rc.path('M322.3,484.8c-0.7,0-13.7-1-14.6-1c0.1-5.4,0.1-27,0.1-29.4v-13.6c0-1.6-0.1-25.9-0.1-27.8\n' +
+            '\t\tc1,0,12.3-1.3,13.7-1.7l0.2,8c-1.4,0-9.2,0.5-9.9,0.5v25.4c0.8,0,6.3-0.5,8.4-1.1l0.1,8c-1,0-7.7-0.4-8.6-0.4v24.7\n' +
+            '\t\tc1,0,6.8,0.3,10.4-0.3L322.3,484.8z', {fill: 'red', fillWeight: 3});
+        rc.path('M351.1,483.8c0.2-2.6,0.3-32.2,0.3-48.3v-15.1c-5,0-11.1,0.5-12.3,0.9v-8.6\n' +
+            '\t\tc1.7,0.8,12,1.2,12.5,1.2h3.8c0.8,0,10.3-0.4,12.2-1.2v8.6c-0.6-0.4-8.6-0.9-12.3-0.9v16.7c0,20.6,0.4,44.7,0.5,46.7H351.1z', {
+            fill: 'black',
+            fillWeight: 3
+        });
+        rc.path('M368.5,452c0-22.5,6.8-40.7,17.2-40.7c8.2,0,14.4,12.7,14.4,34.5c0,15.8-4.5,39.6-16.8,39.6\n' +
+            '\t\tC373.8,485.4,368.5,469.8,368.5,452z M395.9,446.3c0-18.1-5.1-27.5-10.8-27.5c-7.8,0-12.5,14.4-12.5,31.7c0,15.1,4.2,27.4,11,27.4\n' +
+            '\t\tC390.2,477.9,395.9,466.3,395.9,446.3z', {fill: 'black', fillWeight: 3});
+        rc.path('M420.9,478c4.2-2,9.7-7.1,9.7-15.3c0-5.1-1.4-7.7-4.5-11.6c-3.7-4.7-6.2-8.9-6.2-16.1\n' +
+            '\t\tc0-10.7,6.4-20.6,12.3-23.7l0.9,7.8c-2.6,1-9.1,5.7-9.1,14.2c0,5.3,3.1,8.5,4.9,11c3.3,4.6,5.9,7.8,5.9,16\n' +
+            '\t\tc0,9.9-4.5,20.8-12.8,25.3L420.9,478z', {fill: 'black', fillWeight: 3});
+        rc.path('M450.4,483.8c0.2-2.6,0.3-32.2,0.3-48.3v-15.1c-5,0-11.1,0.5-12.3,0.9v-8.6\n' +
+            '\t\tc1.7,0.8,12,1.2,12.5,1.2h3.8c0.8,0,10.3-0.4,12.2-1.2v8.6c-0.6-0.4-8.6-0.9-12.3-0.9v16.7c0,20.6,0.4,44.7,0.5,46.7H450.4z', {
+            fill: 'black',
+            fillWeight: 3
+        });
+        rc.path('M465.4,480.5c2.4-9.7,14.9-67.2,15.9-71.1h0.1c3.8,14.4,14.1,60.1,17,70.6l-3.7,5.7\n' +
+            '\t\tc-0.9-3.8-5.5-24.6-5.9-26.2l-15,1.4c-0.5,1.9-4.1,21.5-4.8,24.9L465.4,480.5z M487.5,452.9c-0.5-2.2-5.8-25.8-6.2-27.4\n' +
+            '\t\tc-0.7,2.2-5.6,27-6,28.7L487.5,452.9z', {fill: 'black', fillWeight: 3});
+        rc.path('M509.6,452.8c0,3.8,0.1,29.5,0.2,31h-4.2c0.2-2.4,0.1-34.5,0.1-36.7v-8.3c0-3-0.1-24-0.2-25.9\n' +
+            '\t\tc2,0,5.7,0.1,9,1c5.7,1.6,9,7.3,9,15.9s-2.5,15.3-6,20.6c1.1,3.4,8.9,26,10.1,29.1l-3.3,6.2c-0.5-1.4-10.2-31.3-11.5-35.5\n' +
+            '\t\tc2.2-2.7,6.5-8.9,6.5-18.8c0-4.6-1.4-11.3-9.6-11.5V452.8z', {fill: 'black', fillWeight: 3});
+        rc.path('M541,483.8c0.2-2.6,0.3-32.2,0.3-48.3v-15.1c-5,0-11.1,0.5-12.3,0.9v-8.6\n' +
+            '\t\tc1.7,0.8,12,1.2,12.5,1.2h3.8c0.8,0,10.3-0.4,12.2-1.2v8.6c-0.6-0.4-8.6-0.9-12.3-0.9v16.7c0,20.6,0.4,44.7,0.5,46.7H541z', {
+            fill: 'black',
+            fillWeight: 3
+        });
+        rc.path('M558.3,445.3c2.2,0.1,12.2,0.3,13,0.2l0.1,6.4c-0.7-0.3-11.2,0.7-12.9,1L558.3,445.3z', {
+            fill: 'black',
+            fillWeight: 3
+        });
+        rc.path('M91.9,174.9c0,6.4,0.2,21.3,0.2,23.5c-3.7,2.8-11.4,5.4-18.3,5.4C55,203.7,43,182.4,43,154.8\n' +
+            '\t\tc0-18.9,9.7-56.6,41-73.7l1.7,14.6c-18.9,7.4-34.5,32.7-34.5,59.3c0,17.4,8,36.9,24.4,36.9c3.5,0,6.9-1.2,8.9-2.5v-28\n' +
+            '\t\tc0-4.9-0.2-10.6-0.2-11.6H92c-0.1,4-0.1,7.9-0.1,12.9V174.9z', {fill: 'blue', fillWeight: 3});
+        rc.path('M119.2,149.7c0,6.4,0.2,48.7,0.4,51.3h-8c0.3-4,0.2-57.1,0.2-60.6v-13.7c0-5-0.2-39.7-0.4-42.9\n' +
+            '\t\tc3.9,0,10.9,0.2,17.2,1.7c10.9,2.7,17.2,12.1,17.2,26.3c0,14.2-4.7,25.3-11.5,34c2.1,5.7,17,43.1,19.3,48.1l-6.3,10.2\n' +
+            '\t\tc-0.9-2.3-19.6-51.8-22.1-58.8c4.1-4.5,12.4-14.7,12.4-31.2c0-7.5-2.7-18.8-18.4-19.1V149.7z', {
+            fill: 'blue',
+            fillWeight: 3
+        });
+        rc.path('M196.8,202.7c-1.3,0-26.3-1.7-27.9-1.7c0.2-8.9,0.2-44.7,0.2-48.6V130c0-2.7-0.2-42.9-0.2-46.1\n' +
+            '\t\tc2,0,23.6-2.2,26.3-2.8l0.3,13.2c-2.7,0-17.6,0.8-18.9,0.8v42c1.5,0,12.1-0.8,16.2-1.8l0.2,13.2c-1.8,0-14.8-0.7-16.4-0.7v40.9\n' +
+            '\t\tc2,0,13.1,0.5,19.9-0.5L196.8,202.7z', {fill: 'blue', fillWeight: 3});
+        rc.path('M244.4,202.7c-1.3,0-26.3-1.7-27.9-1.7c0.2-8.9,0.2-44.7,0.2-48.6V130c0-2.7-0.2-42.9-0.2-46.1\n' +
+            '\t\tc2,0,23.6-2.2,26.3-2.8l0.3,13.2c-2.7,0-17.6,0.8-18.9,0.8v42c1.5,0,12.1-0.8,16.2-1.8l0.2,13.2c-1.8,0-14.8-0.7-16.4-0.7v40.9\n' +
+            '\t\tc2,0,13.1,0.5,19.9-0.5L244.4,202.7z', {fill: 'blue', fillWeight: 3});
+        rc.path('M264.3,127.3c0-3.5-0.1-38.9-0.4-43.6c4.7,0,13.9-0.2,21.1,1.7c27,6.9,30.3,31.2,30.3,42.9\n' +
+            '\t\tc0,51.9-32.7,73.5-51.6,73.5c0.3-7.7,0.5-49.2,0.5-53.8V127.3z M271.8,187.1c22.6-4,35.5-31,35.5-54.4c0-25.5-14-36.9-35.5-36.3\n' +
+            '\t\tV187.1z', {fill: 'blue', fillWeight: 3});
+        rc.path('M268.2,322.9c8.9-3.5,20.3-10.8,20.3-24.2c0-8.6-3-12.8-9.4-19.1c-7.6-7.5-13.1-14.5-13.1-26.7\n' +
+            '\t\tc0-18.7,13.5-35,26.1-39.5l1.8,13.8c-5.7,1.8-19,8.4-19,23c0,9,6.3,13.6,10.1,17.9c6.7,7.5,12.5,12.8,12.5,26.7\n' +
+            '\t\tc0,17.3-9.8,34.8-27.1,41.9L268.2,322.9z', {fill: 'blue', fillWeight: 3});
+        rc.path('M314.5,333.5c0.5-12.6,2.9-106.3,3.3-123.6h0.5c2.5,5.5,43.1,88,45.8,93.3\n' +
+            '\t\tc0-4.7,0.2-81.9,0.3-87.4l8.7,0.8c-0.4,10-2,78.4-2.4,120.5h-0.4c-2.5-4.5-45.1-90.4-46.4-92.7c0.2,3.1-0.5,84.9-0.4,90.4\n' +
+            '\t\tL314.5,333.5z', {fill: 'blue', fillWeight: 3});
+        rc.path('M384.1,328.4c4.7-16.7,30-111.2,31.9-117.7h0.2c7.5,23.8,28.5,99,34.2,116.5l-7.9,9.6\n' +
+            '\t\tc-1.6-6.3-10.7-39.3-11.6-42.2l-30,2.4c-1.2,5.3-8,34.4-9.3,40.1L384.1,328.4z M428,282.6c-1-3.7-11.2-41.5-12.1-44.2\n' +
+            '\t\tc-1.3,3.9-10.9,43.4-11.7,46.2L428,282.6z', {fill: 'blue', fillWeight: 3});
+        rc.path('M464.1,335.3c0.2-4.9,0.5-33.2,0.5-52.3v-17.7c0-14.5-0.5-46.6-0.5-50.5h9.3\n' +
+            '\t\tc-0.1,2.8-0.5,34.4-0.5,48.9v17.9c0,13,0.3,50.3,0.5,53.6H464.1z M504.8,335.1c-1.1-2.4-27.3-54.8-31.1-63.1\n' +
+            '\t\tc1.5-2.8,26.7-50.5,28.8-54.8l5.2,12.8c-3.5,5.5-19.1,32-23.8,40.9c2.7,6.5,23.5,44.6,27,50.9L504.8,335.1z', {
+            fill: 'blue',
+            fillWeight: 3
+        });
+        rc.path('M559.6,335.3c-2.9,0-29.6-1.8-31.3-1.8c0.3-8.8,0.3-44.6,0.3-48.5v-22.2c0-2.8-0.2-43-0.3-46.2\n' +
+            '\t\tc2.1,0,25.2-2.6,29.6-3.1l0.4,14.1c-3.8,0-19.7,0.8-21.2,0.8v40.9c1.7,0,12.9-0.8,18.3-1.8l0.3,14.3c-2.9,0-16.6-0.6-18.6-0.6V321\n' +
+            '\t\tc2.1,0,14,0.4,22.3-0.6L559.6,335.3z', {fill: 'blue', fillWeight: 3});
+    }
+
+    function drawGameOverSVG() {
+        rc.path('M61.3,367.8c-4.3,3.2-13.1,5.7-21.1,5.7c-21.6,0-34.4-22.9-34.4-52.8\n' +
+            '\t\tc0-21.2,11.1-61.3,46.2-79.7l1.9,16.5c-20.7,7.8-38.3,34.8-38.3,63.4c0,18.9,7.8,38.8,26.7,38.8c4,0,8-1.1,9.9-2.5V328\n' +
+            '\t\tc0-5.3-0.2-11.5-0.3-12.5h9.3v26.9C61.1,349.4,61.3,365.5,61.3,367.8z', {
+            fill: 'black',
+            fillWeight: 3
+        });
+        rc.path('M70.5,365.1c5-18,32.3-120,34.4-127h0.2c8.1,25.7,30.8,106.9,36.9,125.8l-8.5,10.4\n' +
+            '\t\tc-1.7-6.8-11.5-42.4-12.5-45.6l-32.4,2.5c-1.3,5.7-8.6,37.1-10.1,43.3L70.5,365.1z M117.9,315.7c-1-4-12.1-44.7-13-47.7\n' +
+            '\t\tc-1.4,4.2-11.8,46.9-12.6,49.8L117.9,315.7z', {
+            fill: 'black',
+            fillWeight: 3
+        });
+        rc.path('M146.7,369.7c1.6-7.6,21-123.9,21.5-128.3h0.4c2.8,11.5,20,77.2,22.9,87.6\n' +
+            '\t\tc3-10.2,22.7-78.5,24.3-84h0.3c2.8,14.6,19.3,104.6,23.2,123.6l-8.7,6.6c-2.2-13.6-15.2-89.3-16.5-96.3c-3,10-19.6,67-23.7,80.2\n' +
+            '\t\th-0.2c-5.4-20.1-16.5-62.4-20.7-78.7c-1.7,11.2-13.3,87.8-14.3,94.8L146.7,369.7z', {
+            fill: 'black',
+            fillWeight: 3
+        });
+        rc.path('M289.6,372.5c-3.1,0-31.9-1.9-33.8-1.9c0.3-9.5,0.3-48.1,0.3-52.4v-24c0-3-0.2-46.4-0.3-49.8\n' +
+            '\t\tc2.3,0,27.2-2.8,31.9-3.4l0.4,15.3c-4.1,0-21.3,0.8-22.9,0.8v44.1c1.8,0,14-0.8,19.7-1.9l0.3,15.5c-3.1,0-17.9-0.6-20-0.6V357\n' +
+            '\t\tc2.3,0,15.1,0.4,24-0.6L289.6,372.5z', {
+            fill: 'black',
+            fillWeight: 3
+        });
+        rc.path('M334.9,314c0-40.1,14.6-72.5,37.7-72.5c18.5,0,32,22.7,32,61.5c0,28.2-9.9,70.6-37.4,70.6\n' +
+            '\t\tC346.3,373.6,334.9,345.8,334.9,314z M394.8,303.8c0-32.2-11.1-48.4-23.6-48.4c-16.7,0-26.7,25-26.7,55.8\n' +
+            '\t\tc0,26.9,8.9,48.4,23.5,48.4C382.4,359.6,394.8,339.4,394.8,303.8z', {
+            fill: 'black',
+            fillWeight: 3
+        });
+        rc.path('M479.2,250.1c-3,9.3-32,113.9-35.4,126.4h-0.2c-1.8-5.9-29.8-118.1-32.3-126.4l8.7-8.9\n' +
+            '\t\tc1.5,8.3,22.7,96.1,24.6,101.8c1.6-4.5,25.1-95.9,26.2-101.8L479.2,250.1z', {
+            fill: 'black',
+            fillWeight: 3
+        });
+        rc.path('M526.4,372.5c-3.1,0-31.9-1.9-33.8-1.9c0.3-9.5,0.3-48.1,0.3-52.4v-24c0-3-0.2-46.4-0.3-49.8\n' +
+            '\t\tc2.3,0,27.2-2.8,31.9-3.4l0.4,15.3c-4.1,0-21.3,0.8-22.9,0.8v44.1c1.8,0,14-0.8,19.7-1.9l0.3,15.5c-3.1,0-17.9-0.6-20-0.6V357\n' +
+            '\t\tc2.3,0,15.1,0.4,24-0.6L526.4,372.5z', {
+            fill: 'black',
+            fillWeight: 3
+        });
+        rc.path('M557.5,315.4c0,6.8,0.3,52.4,0.5,55.1h-9.9c0.3-4.2,0.2-61.5,0.2-65.3v-14.6\n' +
+            '\t\tc0-5.5-0.2-42.8-0.5-46.2c4.5,0,12.8-0.4,20.8,1.5c12.6,3,19.9,13.4,19.9,29.1c0,14.8-5.7,27.6-13.5,36.9\n' +
+            '\t\tc2.4,6.6,19.3,43.9,22,49.2l-7.2,12.9c-1-2.5-22.7-56-25.5-63.6c4.7-4.9,14.3-14.6,14.3-32.7c0-8.5-3.3-19.3-21.1-19.5V315.4z', {
+            fill: 'black',
+            fillWeight: 3
+        });
+    }
+
+    function drawScoreSVG() {
+        scoreTitleRc.path('M13.7,141.9c9.2-3.1,20.8-9.5,20.8-21.3c0-7.6-3.1-11.2-9.7-16.8c-7.8-6.6-13.4-12.8-13.4-23.5\n' +
+            '\t\tc0-16.4,13.8-30.8,26.7-34.7L40,57.7c-5.9,1.6-19.4,7.4-19.4,20.2c0,8,6.5,11.9,10.3,15.7c6.9,6.6,12.8,11.2,12.8,23.5\n' +
+            '\t\tc0,15.2-10,30.6-27.8,36.8L13.7,141.9z', {
+            fill: 'black',
+            fillWeight: 3
+        });
+        scoreTitleRc.path('M106.3,152.4c-1.7,0.5-5.9,1.2-11.3,1.2c-30.8,0-38.4-29.4-38.4-43.6\n' +
+            '\t\tc0-24.9,13.5-54.8,44.5-64.3l1.4,13.1c-19.7,4.1-36.6,23.2-36.6,48.7c0,17.3,8.5,33.5,30,33.5c3.7,0,7.5-0.9,9.6-1.7L106.3,152.4z', {
+            fill: 'black',
+            fillWeight: 3
+        });
+        scoreTitleRc.path('M113.1,105.1c0-32.7,13.8-59.1,35.7-59.1c17.5,0,30.3,18.5,30.3,50.1c0,23-9.4,57.6-35.4,57.6\n' +
+            '\t\tC124,153.6,113.1,131,113.1,105.1z M169.9,96.8c0-26.3-10.5-39.4-22.4-39.4c-15.8,0-25.3,20.4-25.3,45.5c0,22,8.5,39.4,22.3,39.4\n' +
+            '\t\tC158.2,142.2,169.9,125.8,169.9,96.8z', {
+            fill: 'black',
+            fillWeight: 3
+        });
+        scoreTitleRc.path('M205.5,106.3c0,5.5,0.3,42.7,0.5,44.9h-9.4c0.3-3.5,0.2-50.1,0.2-53.2V86.1\n' +
+            '\t\tc0-4.5-0.2-34.9-0.5-37.7c4.3,0,12.1-0.3,19.7,1.2C228,52,235,60.5,235,73.3c0,12.1-5.4,22.5-12.8,30.1\n' +
+            '\t\tc2.3,5.4,18.3,35.8,20.9,40.1l-6.9,10.5c-1-2.1-21.5-45.6-24.2-51.9c4.5-4,13.5-11.9,13.5-26.6c0-6.9-3.1-15.7-20-15.9V106.3z', {
+            fill: 'black',
+            fillWeight: 3
+        });
+        scoreTitleRc.path('M289.9,152.8c-3,0-30.2-1.6-32-1.6c0.3-7.8,0.3-39.2,0.3-42.7V89c0-2.4-0.2-37.9-0.3-40.6\n' +
+            '\t\tc2.2,0,25.8-2.2,30.2-2.8l0.4,12.4c-3.9,0-20.2,0.7-21.7,0.7v35.9c1.7,0,13.2-0.7,18.7-1.6l0.3,12.6c-3,0-17-0.5-19-0.5v34.9\n' +
+            '\t\tc2.2,0,14.3,0.3,22.8-0.5L289.9,152.8z', {
+            fill: 'black',
+            fillWeight: 3
+        });
+    }
+
+    function drawNumberSVG(num, rc) {
+        switch (num) {
+            case 0:
+                rc.path('M8.2,50.2C8.2,23.3,28.8,5.7,51,5.7c23.4,0,40.8,17.7,40.8,43.5c0,23.1-16.8,45.2-43.3,45.2\n' +
+                    '\t\tC28.6,94.3,8.2,79.7,8.2,50.2z M80.2,48.6C80.2,31.2,66.9,16,49.8,16c-17.2,0-30,14.6-30,34.8C19.8,66.4,30.1,84,50.3,84\n' +
+                    '\t\tC63.6,84,80.2,72.7,80.2,48.6z', {
+                    fill: "black",
+                    fillWeight: 3
+                });
+                break;
+            case 1:
+                rc.path('M54.9,97.9c0-3.5,0.8-20.2,0.8-38.2V25.3c-3.8,4.5-13.9,14.4-17.8,18.4L32,36.4\n' +
+                    '\t\tc2.5-2.3,31.8-29.9,35.7-34.3H68c0,4.4-1.1,22.1-1.1,40v20.5c0,19.1-0.1,31.1,0.3,35.2H54.9z', {
+                    fill: "black",
+                    fillWeight: 3
+                });
+                break;
+            case 2:
+                rc.path('M82.3,98.2c-1.7-0.3-9.2-0.4-18.8-0.7c-9.6-0.1-21.2-0.4-30.7-0.4H18l-0.3-1.3\n' +
+                    '\t\tc17.6-12.1,46.6-34,46.6-55.5c0-18.6-21.1-26.9-36.6-27.7l2.4-10.9c29.9,3.6,47,19.7,47,37.4C77,60.7,54.5,78.3,43,87.7l0.1,0.5\n' +
+                    '\t\tl39.2-1.5V98.2z', {
+                    fill: "black",
+                    fillWeight: 3
+                });
+                break;
+            case 3:
+                rc.path('M32.6,2c15.3,0.8,39.7,9,39.7,24.3c0,9.1-9.6,17.9-16.3,20.7v0.3c10.3,2.6,19.2,8.5,19.2,18.8\n' +
+                    '\t\tc0,17.5-25.5,31.4-49.6,32l-0.8-10.4c15,1,37-6,37-20.9c0-11.6-17.9-15.9-27.8-16.3v-3.9c10.7-1,26.1-8.1,26.1-18.1\n' +
+                    '\t\tC60.1,17.7,44.5,12,31,11.9L32.6,2z', {
+                    fill: "black",
+                    fillWeight: 3
+                });
+                break;
+            case 4:
+                rc.path('M60.3,98.6c0.1-3.7,0.7-9.6,0.7-17v-4.7H14.1l-0.3-1.1L71.1,1.4h0.8v66.2l14.3-0.4l-0.9,10\n' +
+                    '\t\tl-13.6-0.4V83c0,5.3,0.1,11.7,0.3,15.6H60.3z M61.2,28h-0.3c-4.3,6.6-24.3,32.8-29.1,39.5h29.3V28z', {
+                    fill: "black",
+                    fillWeight: 3
+                });
+                break;
+            case 5:
+                rc.path('M38.6,27c28.9,4.9,35.3,17.4,35.3,28.3c0,19.9-25.4,38.8-46.3,43.4l-2.9-10.4\n' +
+                    '\t\tC39,85.6,61.4,74.7,61.4,57.4c0-11.6-12.9-19.1-33.7-21.1l5.4-33.4C37,2.8,68.5,1.9,75.3,1.3l-0.1,11.6l-34.1-0.3L38.6,27z', {
+                    fill: "black",
+                    fillWeight: 3
+                });
+                break;
+            case 6:
+                rc.path('M66.6,11.7c-6.7,3.8-19.7,14.8-26.2,27.7c22-0.8,38.7,10.6,38.7,26.6C79.1,84.3,63,97,47.5,97\n' +
+                    '\t\tc-7.5,0-13.6-2-18.6-7c-5.3-5.3-8-12.3-8-22.4c0-25.1,20.9-52.4,38.8-64.6L66.6,11.7z M36.3,48.2c-2.4,5.3-3.6,10.6-3.6,18.6\n' +
+                    '\t\tc0,12.9,6.6,20.9,15.7,20.9c10.9,0,18.3-9,18.3-19.1C66.7,54.6,51.7,47.2,36.3,48.2z', {
+                    fill: "black",
+                    fillWeight: 3
+                });
+                break;
+            case 7:
+                rc.path('M19.8,1.8C29.5,2.2,67.4,3,79.9,3l0.3,0.4c-2.1,3.5-33.8,87.5-36.6,94.8L32,92.5\n' +
+                    '\t\tc2.8-4.1,32.4-75.9,33.7-79.3L20.3,13L19.8,1.8z', {
+                    fill: "black",
+                    fillWeight: 3
+                });
+                break;
+            case 8:
+                rc.path('M20.3,73.3c0-10,6.6-19.7,15.4-24.6C27,45.1,21.4,36.6,21.4,27.3c0-12,10.5-26.1,29.9-25.9\n' +
+                    '\t\tc15.9,0,27.1,9.4,27.1,23.7c0,7.7-4.5,17.7-15,22.5c10.4,4.4,16.3,12.9,16.3,23.9c0,11.2-8.9,27.3-30.7,27.3\n' +
+                    '\t\tC29.3,98.7,20.3,87,20.3,73.3z M67.2,72.2c0-11.8-7.8-19.1-17.6-19.1c-11.1,0-17,9.3-17,19.8c0,8.8,6.6,17.2,17.1,17.2\n' +
+                    '\t\tC59.9,90,67.2,83,67.2,72.2z M49.4,44.1c9.5,0,16.8-6.6,16.8-17.4c0-11-7.5-16.8-16.2-16.8c-11.8,0-16.6,9-16.6,17.2\n' +
+                    '\t\tC33.5,35.6,39.7,44.1,49.4,44.1z', {
+                    fill: "black",
+                    fillWeight: 3
+                });
+                break;
+            case 9:
+                rc.path('M34,88.3c6.7-3.9,19.1-14.8,25.9-28.8C37.7,60.5,21,49.2,21,33.4C21,16.4,35.9,3,51.6,3\n' +
+                    '\t\tC68.4,3,79,15.2,79,31.8C79,58.4,58.7,84.8,40.9,97L34,88.3z M63.6,51c1.6-3.8,3-10.4,3-17.5c0-14.2-6.4-21.4-15.8-21.4\n' +
+                    '\t\tc-10.4,0-17.6,9-17.6,18.9C33.2,45.7,47.8,52.4,63.6,51z', {
+                    fill: "black",
+                    fillWeight: 3
+                });
+                break;
+        }
+    }
+
+    function drawPlayerScore() {
+        let scores = [];
+        let tScore = score;
+        scores.push(Math.floor(score / 100));
+        tScore %= 100;
+        scores.push(Math.floor(score / 100));
+        tScore %= 10;
+        scores.push(tScore);
+        for (let i = 0; i < scores.length; i++) {
+            drawNumberSVG(scores[i], scoreRcs[i]);
+        }
+        console.log(scores);
+    }
+
+    function clearScoreTitleCanvas() {
+        scoreTitleC2d.clearRect(0, 0, 300, 200);
+    }
+
+    function clearScoreCanvas() {
+        for (let i = 0; i < scoreC2ds.length; i++) {
+            scoreC2ds[i].clearRect(0, 0, 100, 100);
+        }
+    }
+
+    onLoad();
+
+</script>
+</body>
+</html>
