@@ -144,6 +144,11 @@ const canvasUpEvent = (e) => {
 const getCubeDrawData = (ox = posData.cube.ox, oy = posData.cube.oy, c = shapeData.cubeFill.c) => {
     return {ox, oy, c};
 };
+
+const getShadowDrawData = (ox, oy, alpha) => {
+    return {ox, oy, alpha};
+};
+
 const createCubeQueueData = (clipCount = null, shakeLength = null, angle = null, elasticity = null) => {
     if (!clipCount) {
         clipCount = Math.floor(Math.random() * 11) + 5;
@@ -174,6 +179,10 @@ const createCubeQueueData = (clipCount = null, shakeLength = null, angle = null,
             p.ox += clipShakeGoX;
             p.oy += clipShakeGoY;
             clip = getCubeDrawData(p.ox, p.oy, getHitColor(clipColor));
+            //handle shadow
+            if (i === elasticity - 1) {
+                createShadowQueueData(p.ox, p.oy, clipCount - i);
+            }
         } else {
             p.ox -= clipShakeBackX;
             p.oy -= clipShakeBackY;
@@ -184,6 +193,19 @@ const createCubeQueueData = (clipCount = null, shakeLength = null, angle = null,
     }
     cubeQueue.draw.push(getCubeDrawData());
 };
+
+const createShadowQueueData = (ox, oy, frame) => {
+    let alpha = 0.8;
+    let alphaRange = 0.8 / frame;
+    let tObj = {draw: [], clear: []};
+    for (let f = 0; f < frame; f++) {
+        tObj.draw.push(getShadowDrawData(ox, oy, alpha));
+        alpha -= alphaRange;
+    }
+    shadowQueue.push(tObj);
+    log(shadowQueue);
+};
+
 const getHitColor = (alpha) => {
     return "rgba(255,0,0," + alpha + ")";
 };
@@ -213,8 +235,30 @@ const drawCube = () => {
     cubeQueue.clear.push(clip);
 };
 
+const drawShadow = () => {
+    for (let obj of shadowQueue) {
+        let clearClip = obj.clear.shift();
+        if (clearClip) {
+            pencil.clearRect(clearClip.ox - pencilStokeWidth, clearClip.oy - pencilStokeWidth, shapeData.cubeStroke.w + 2 * pencilStokeWidth, shapeData.cubeStroke.h + 2 * pencilStokeWidth);
+        }
+        let clip = obj.draw.shift();
+        if (!clip) continue;
+        pencil.strokeRect(clip.ox, clip.oy, shapeData.cubeStroke.w, shapeData.cubeStroke.h);
+        pencil.fillStyle = "rgba(255,0,0," + clip.alpha + ")";
+        pencil.fillRect(clip.ox + pencilStokeWidth / 2, clip.oy + pencilStokeWidth / 2, shapeData.cubeStroke.w - pencilStokeWidth, shapeData.cubeStroke.h - pencilStokeWidth);
+        obj.clear.push(clip);
+    }
+    for (let i = 0; i < shadowQueue.length; i++) {
+        if (shadowQueue[i].draw.length === 0 && shadowQueue[i].clear.length === 0) {
+            shadowQueue.splice(i,1);
+            i--;
+        }
+    }
+};
+
 const update = () => {
     log("update");
+    // drawShadow();
     drawCube();
 };
 
